@@ -1,6 +1,6 @@
-import React from 'react';
+import 'react-calendar/dist/Calendar.css';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 
 // Layouts
 import { DashboardLayout } from './components/layout/DashboardLayout';
@@ -26,9 +26,17 @@ import { DocumentsPage } from './pages/documents/DocumentsPage';
 import { SettingsPage } from './pages/settings/SettingsPage';
 import { HelpPage } from './pages/help/HelpPage';
 import { DealsPage } from './pages/deals/DealsPage';
+import { TourPage } from './pages/tour/TourPage';
 
 // Chat Pages
 import { ChatPage } from './pages/chat/ChatPage';
+
+function DashboardIndexRedirect() {
+  const { user, isLoading } = useAuth();
+  if (isLoading) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  return <Navigate to={user.role === 'investor' ? '/dashboard/investor' : '/dashboard/entrepreneur'} replace />;
+}
 
 function App() {
   return (
@@ -41,6 +49,10 @@ function App() {
           
           {/* Dashboard Routes */}
           <Route path="/dashboard" element={<DashboardLayout />}>
+            <Route
+              index
+              element={<DashboardIndexRedirect />}
+            />
             <Route path="entrepreneur" element={<EntrepreneurDashboard />} />
             <Route path="investor" element={<InvestorDashboard />} />
           </Route>
@@ -82,6 +94,10 @@ function App() {
           
           <Route path="/deals" element={<DashboardLayout />}>
             <Route index element={<DealsPage />} />
+          </Route>
+          
+          <Route path="/tour" element={<DashboardLayout />}>
+            <Route index element={<TourPage />} />
           </Route>
           
           {/* Chat Routes */}

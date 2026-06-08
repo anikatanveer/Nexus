@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MessageCircle, ExternalLink } from 'lucide-react';
 import { Entrepreneur } from '../../types';
+import { useAuth } from '../../context/AuthContext';
 import { Card, CardBody, CardFooter } from '../ui/Card';
 import { Avatar } from '../ui/Avatar';
 import { Badge } from '../ui/Badge';
@@ -17,6 +18,7 @@ export const EntrepreneurCard: React.FC<EntrepreneurCardProps> = ({
   showActions = true
 }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   
   const handleViewProfile = () => {
     navigate(`/profile/entrepreneur/${entrepreneur.id}`);
@@ -75,23 +77,26 @@ export const EntrepreneurCard: React.FC<EntrepreneurCardProps> = ({
       
       {showActions && (
         <CardFooter className="border-t border-gray-100 bg-gray-50 flex justify-between">
-          <Button
-            variant="outline"
-            size="sm"
-            leftIcon={<MessageCircle size={16} />}
-            onClick={handleMessage}
-          >
-            Message
-          </Button>
-          
-          <Button
-            variant="primary"
-            size="sm"
-            rightIcon={<ExternalLink size={16} />}
-            onClick={handleViewProfile}
-          >
-            View Profile
-          </Button>
+          <div className="flex items-center gap-2">
+            {user?.role === 'investor' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={(e) => { e.stopPropagation(); navigate(`/dashboard?requestTo=${entrepreneur.id}`); }}
+              >
+                Request meeting
+              </Button>
+            )}
+
+            <Button
+              variant="primary"
+              size="sm"
+              rightIcon={<ExternalLink size={16} />}
+              onClick={handleViewProfile}
+            >
+              View Profile
+            </Button>
+          </div>
         </CardFooter>
       )}
     </Card>

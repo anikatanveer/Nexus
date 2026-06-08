@@ -1,11 +1,15 @@
+import { MeetingCalendar } from '../../components/MeetingCalendar';
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Users, Bell, Calendar, TrendingUp, AlertCircle, PlusCircle } from 'lucide-react';
+import { Users, Bell, Calendar, TrendingUp, AlertCircle, PlusCircle, Banknote } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Card, CardBody, CardHeader } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { CollaborationRequestCard } from '../../components/collaboration/CollaborationRequestCard';
+import { DocumentChamber } from '../../components/DocumentChamber';
 import { InvestorCard } from '../../components/investor/InvestorCard';
+import { PaymentCenter } from '../../components/PaymentCenter';
+import { VideoCallPanel } from '../../components/VideoCallPanel';
 import { useAuth } from '../../context/AuthContext';
 import { CollaborationRequest } from '../../types';
 import { getRequestsForEntrepreneur } from '../../data/collaborationRequests';
@@ -14,7 +18,7 @@ import { investors } from '../../data/users';
 export const EntrepreneurDashboard: React.FC = () => {
   const { user } = useAuth();
   const [collaborationRequests, setCollaborationRequests] = useState<CollaborationRequest[]>([]);
-  const [recommendedInvestors, setRecommendedInvestors] = useState(investors.slice(0, 3));
+  const recommendedInvestors = investors.slice(0, 3);
   
   useEffect(() => {
     if (user) {
@@ -35,6 +39,10 @@ export const EntrepreneurDashboard: React.FC = () => {
   if (!user) return null;
   
   const pendingRequests = collaborationRequests.filter(req => req.status === 'pending');
+  const confirmedMeetings = collaborationRequests.filter(req => req.status === 'accepted');
+  const nextMeeting = [...confirmedMeetings]
+    .filter(req => req.meetingDate)
+    .sort((a, b) => new Date(a.meetingDate || '').getTime() - new Date(b.meetingDate || '').getTime())[0] || null;
   
   return (
     <div className="space-y-6 animate-fade-in">
@@ -52,9 +60,14 @@ export const EntrepreneurDashboard: React.FC = () => {
           </Button>
         </Link>
       </div>
+
+      <MeetingCalendar />
+      <div className="mt-6">
+        <VideoCallPanel />
+      </div>
       
       {/* Summary cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="bg-primary-50 border border-primary-100">
           <CardBody>
             <div className="flex items-center">
@@ -93,7 +106,10 @@ export const EntrepreneurDashboard: React.FC = () => {
               </div>
               <div>
                 <p className="text-sm font-medium text-accent-700">Upcoming Meetings</p>
-                <h3 className="text-xl font-semibold text-accent-900">2</h3>
+                <h3 className="text-xl font-semibold text-accent-900">{confirmedMeetings.length}</h3>
+                {nextMeeting ? (
+                  <p className="text-xs text-accent-700/80">Next: {nextMeeting.meetingDate} · {nextMeeting.meetingTime}</p>
+                ) : null}
               </div>
             </div>
           </CardBody>
@@ -112,6 +128,26 @@ export const EntrepreneurDashboard: React.FC = () => {
             </div>
           </CardBody>
         </Card>
+
+        <Card className="bg-primary-50 border border-primary-100">
+          <CardBody>
+            <div className="flex items-center">
+              <div className="p-3 bg-primary-100 rounded-full mr-4">
+                <Banknote size={20} className="text-primary-700" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-primary-700">Wallet Balance</p>
+                <h3 className="text-xl font-semibold text-primary-900">$320,000</h3>
+              </div>
+            </div>
+          </CardBody>
+        </Card>
+      </div>
+
+      <PaymentCenter />
+
+      <div className="mt-6">
+        <DocumentChamber />
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

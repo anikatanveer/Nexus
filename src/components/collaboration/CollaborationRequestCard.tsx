@@ -9,6 +9,7 @@ import { Button } from '../ui/Button';
 import { findUserById } from '../../data/users';
 import { updateRequestStatus } from '../../data/collaborationRequests';
 import { formatDistanceToNow } from 'date-fns';
+import { useAuth } from '../../context/AuthContext';
 
 interface CollaborationRequestCardProps {
   request: CollaborationRequest;
@@ -20,9 +21,15 @@ export const CollaborationRequestCard: React.FC<CollaborationRequestCardProps> =
   onStatusUpdate
 }) => {
   const navigate = useNavigate();
-  const investor = findUserById(request.investorId);
-  
-  if (!investor) return null;
+  const { user } = useAuth();
+
+  // Determine counterparty (the other user involved in the request)
+  const isCurrentUserInvestor = user?.id === request.investorId;
+  const counterparty = isCurrentUserInvestor
+    ? findUserById(request.entrepreneurId)
+    : findUserById(request.investorId);
+
+  if (!counterparty) return null;
   
   const handleAccept = () => {
     updateRequestStatus(request.id, 'accepted');
@@ -39,11 +46,12 @@ export const CollaborationRequestCard: React.FC<CollaborationRequestCardProps> =
   };
   
   const handleMessage = () => {
-    navigate(`/chat/${investor.id}`);
+    navigate(`/chat/${counterparty.id}`);
   };
-  
+
   const handleViewProfile = () => {
-    navigate(`/profile/investor/${investor.id}`);
+    const profilePath = counterparty.role === 'investor' ? `/profile/investor/${counterparty.id}` : `/profile/entrepreneur/${counterparty.id}`;
+    navigate(profilePath);
   };
   
   const getStatusBadge = () => {
@@ -59,37 +67,47 @@ export const CollaborationRequestCard: React.FC<CollaborationRequestCardProps> =
     }
   };
   
+  const isOutgoing = user
+    ? (user.id === request.investorId && request.initiatorRole === 'investor') ||
+      (user.id === request.entrepreneurId && request.initiatorRole === 'entrepreneur')
+    : false;
+
   return (
     <Card className="transition-all duration-300">
       <CardBody className="flex flex-col">
         <div className="flex justify-between items-start">
           <div className="flex items-start">
             <Avatar
-              src={investor.avatarUrl}
-              alt={investor.name}
+              src={counterparty.avatarUrl}
+              alt={counterparty.name}
               size="md"
-              status={investor.isOnline ? 'online' : 'offline'}
+              status={counterparty.isOnline ? 'online' : 'offline'}
               className="mr-3"
             />
-            
+
             <div>
-              <h3 className="text-md font-semibold text-gray-900">{investor.name}</h3>
+              <h3 className="text-md font-semibold text-gray-900">{counterparty.name}</h3>
               <p className="text-sm text-gray-500">
                 {formatDistanceToNow(new Date(request.createdAt), { addSuffix: true })}
               </p>
             </div>
           </div>
-          
-          {getStatusBadge()}
+
+          {request.status === 'pending' && isOutgoing ? (
+            <Badge variant="gray">Request sent</Badge>
+          ) : (
+            getStatusBadge()
+          )}
         </div>
-        
+
         <div className="mt-4">
           <p className="text-sm text-gray-600">{request.message}</p>
         </div>
       </CardBody>
-      
+
       <CardFooter className="border-t border-gray-100 bg-gray-50">
-        {request.status === 'pending' ? (
+        {/* If current user is the receiver (incoming) and pending -> show accept/decline */}
+        {user && ((user.id === request.investorId && user.role !== request.initiatorRole) || (user.id === request.entrepreneurId && user.role !== request.initiatorRole)) && request.status === 'pending' ? (
           <div className="flex justify-between w-full">
             <div className="space-x-2">
               <Button
@@ -109,7 +127,7 @@ export const CollaborationRequestCard: React.FC<CollaborationRequestCardProps> =
                 Accept
               </Button>
             </div>
-            
+
             <Button
               variant="primary"
               size="sm"
@@ -129,7 +147,7 @@ export const CollaborationRequestCard: React.FC<CollaborationRequestCardProps> =
             >
               Message
             </Button>
-            
+
             <Button
               variant="primary"
               size="sm"

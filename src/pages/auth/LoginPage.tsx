@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { User, CircleDollarSign, Building2, LogIn, AlertCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
+import { users } from '../../data/users';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { TwoFactorVerification } from '../../components/TwoFactorVerification';
 import { UserRole } from '../../types';
 
 export const LoginPage: React.FC = () => {
@@ -12,23 +15,82 @@ export const LoginPage: React.FC = () => {
   const [role, setRole] = useState<UserRole>('entrepreneur');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [show2FA, setShow2FA] = useState(false);
+  const [is2FALoading, setIs2FALoading] = useState(false);
+  const [generatedOtp, setGeneratedOtp] = useState('');
+  const [otpMessage, setOtpMessage] = useState('');
   
   const { login } = useAuth();
   const navigate = useNavigate();
   
+  const isDemoAccount = email === 'sarah@techwave.io' || email === 'michael@vcinnovate.com';
+
+  const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+  const sendOtp = (targetEmail: string) => {
+    const otp = generateOtp();
+    setGeneratedOtp(otp);
+    setOtpMessage(`A new verification code has been sent to ${targetEmail}`);
+    toast.success('Verification code sent to your email');
+    console.info(`Verification code for ${targetEmail}: ${otp}`);
+    setShow2FA(true);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
     
     try {
-      await login(email, password, role);
-      // Redirect based on user role
-      navigate(role === 'entrepreneur' ? '/dashboard/entrepreneur' : '/dashboard/investor');
+      if (!email || !password) {
+        throw new Error('Please enter email and password');
+      }
+
+      const matchedUser = users.find(u => u.email === email && u.role === role);
+      if (!matchedUser) {
+        throw new Error('No account found with this email and role');
+      }
+
+      sendOtp(email);
+      setIsLoading(false);
     } catch (err) {
       setError((err as Error).message);
       setIsLoading(false);
     }
+  };
+  
+  const handle2FAVerify = async (otp: string) => {
+    setIs2FALoading(true);
+    
+    try {
+      if (!/^\d{6}$/.test(otp)) {
+        throw new Error('Invalid OTP format');
+      }
+
+      if (!isDemoAccount && otp !== generatedOtp) {
+        throw new Error('Invalid verification code');
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      await login(email, password, role);
+      
+      navigate(role === 'entrepreneur' ? '/dashboard/entrepreneur' : '/dashboard/investor');
+    } catch (err) {
+      throw err;
+    } finally {
+      setIs2FALoading(false);
+    }
+  };
+  
+  const handle2FACancel = () => {
+    setShow2FA(false);
+    setIsLoading(false);
+    setGeneratedOtp('');
+    setOtpMessage('');
+  };
+
+  const handle2FAResend = () => {
+    sendOtp(email);
   };
   
   // For demo purposes, pre-filled credentials
@@ -204,6 +266,18 @@ export const LoginPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {show2FA && (
+        <TwoFactorVerification
+          email={email}
+          onVerify={handle2FAVerify}
+          onResend={handle2FAResend}
+          onCancel={handle2FACancel}
+          otpMessage={otpMessage}
+          otpVisibleCode={(import.meta.env.DEV || isDemoAccount) ? generatedOtp : undefined}
+          isLoading={is2FALoading}
+        />
+      )}
     </div>
   );
 };

@@ -55,6 +55,31 @@ export interface CollaborationRequest {
   message: string;
   status: 'pending' | 'accepted' | 'rejected';
   createdAt: string;
+  meetingDate?: string;
+  meetingTime?: string;
+  initiatorRole: 'investor' | 'entrepreneur';
+}
+
+export interface AvailabilitySlot {
+  id: string;
+  userId: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  createdAt: string;
+}
+
+export interface Transaction {
+  id: string;
+  type: 'deposit' | 'withdraw' | 'transfer' | 'funding';
+  amount: number;
+  senderId: string;
+  senderName: string;
+  receiverId: string;
+  receiverName: string;
+  status: 'pending' | 'completed' | 'rejected' | 'failed';
+  createdAt: string;
+  note: string;
 }
 
 export interface Document {

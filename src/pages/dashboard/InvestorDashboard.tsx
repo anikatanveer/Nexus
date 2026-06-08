@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Users, PieChart, Filter, Search, PlusCircle } from 'lucide-react';
+import { Users, PieChart, Filter, Search, PlusCircle, Calendar, Banknote } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Card, CardBody, CardHeader } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Badge } from '../../components/ui/Badge';
 import { EntrepreneurCard } from '../../components/entrepreneur/EntrepreneurCard';
+import { CollaborationRequestCard } from '../../components/collaboration/CollaborationRequestCard';
+import { DocumentChamber } from '../../components/DocumentChamber';
+import { MeetingCalendar } from '../../components/MeetingCalendar';
+import { PaymentCenter } from '../../components/PaymentCenter';
+import { VideoCallPanel } from '../../components/VideoCallPanel';
 import { useAuth } from '../../context/AuthContext';
-import { Entrepreneur } from '../../types';
 import { entrepreneurs } from '../../data/users';
 import { getRequestsFromInvestor } from '../../data/collaborationRequests';
 
@@ -20,7 +24,10 @@ export const InvestorDashboard: React.FC = () => {
   
   // Get collaboration requests sent by this investor
   const sentRequests = getRequestsFromInvestor(user.id);
-  const requestedEntrepreneurIds = sentRequests.map(req => req.entrepreneurId);
+  const confirmedMeetings = sentRequests.filter(req => req.status === 'accepted');
+  const nextMeeting = [...confirmedMeetings]
+    .filter(req => req.meetingDate)
+    .sort((a, b) => new Date(a.meetingDate || '').getTime() - new Date(b.meetingDate || '').getTime())[0] || null;
   
   // Filter entrepreneurs based on search and industry filters
   const filteredEntrepreneurs = entrepreneurs.filter(entrepreneur => {
@@ -40,6 +47,7 @@ export const InvestorDashboard: React.FC = () => {
   
   // Get unique industries for filter
   const industries = Array.from(new Set(entrepreneurs.map(e => e.industry)));
+  const featuredEntrepreneurs = filteredEntrepreneurs.slice(0, 6);
   
   // Toggle industry selection
   const toggleIndustry = (industry: string) => {
@@ -86,14 +94,19 @@ export const InvestorDashboard: React.FC = () => {
             
             <div className="flex flex-wrap gap-2">
               {industries.map(industry => (
-                <Badge
+                <button
                   key={industry}
-                  variant={selectedIndustries.includes(industry) ? 'primary' : 'gray'}
-                  className="cursor-pointer"
+                  type="button"
                   onClick={() => toggleIndustry(industry)}
+                  className="rounded-full focus:outline-none focus:ring-2 focus:ring-primary-300"
                 >
-                  {industry}
-                </Badge>
+                  <Badge
+                    variant={selectedIndustries.includes(industry) ? 'primary' : 'gray'}
+                    className="cursor-pointer"
+                  >
+                    {industry}
+                  </Badge>
+                </button>
               ))}
             </div>
           </div>
@@ -145,6 +158,73 @@ export const InvestorDashboard: React.FC = () => {
             </div>
           </CardBody>
         </Card>
+        
+        <Card className="bg-primary-50 border border-primary-100">
+          <CardBody>
+            <div className="flex items-center">
+              <div className="p-3 bg-primary-100 rounded-full mr-4">
+                <Calendar size={20} className="text-primary-700" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-primary-700">Confirmed meetings</p>
+                <h3 className="text-xl font-semibold text-primary-900">{confirmedMeetings.length}</h3>
+                {nextMeeting ? (
+                  <p className="text-xs text-primary-700/80">Next: {nextMeeting.meetingDate} · {nextMeeting.meetingTime}</p>
+                ) : null}
+              </div>
+            </div>
+          </CardBody>
+        </Card>
+
+        <Card className="bg-success-50 border border-success-100">
+          <CardBody>
+            <div className="flex items-center">
+              <div className="p-3 bg-success-100 rounded-full mr-4">
+                <Banknote size={20} className="text-success-700" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-success-700">Wallet Balance</p>
+                <h3 className="text-xl font-semibold text-success-900">$1.25M</h3>
+              </div>
+            </div>
+          </CardBody>
+        </Card>
+      </div>
+
+      <PaymentCenter />
+
+      <div className="mt-6">
+        <DocumentChamber />
+      </div>
+
+      <MeetingCalendar />
+      <div className="mt-6">
+        <VideoCallPanel />
+      </div>
+      
+      {/* Collaboration requests sent by this investor */}
+      <div className="mt-6">
+        <Card>
+          <CardHeader className="flex justify-between items-center">
+            <h2 className="text-lg font-medium text-gray-900">Your Meeting Requests</h2>
+            <Badge variant="primary">{sentRequests.length} sent</Badge>
+          </CardHeader>
+          <CardBody>
+            {sentRequests.length > 0 ? (
+              <div className="space-y-4">
+                {sentRequests.map(req => (
+                  <CollaborationRequestCard
+                    key={req.id}
+                    request={req}
+                    onStatusUpdate={() => { /* optimistic UI not required here */ }}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">You haven't sent any meeting requests yet.</p>
+            )}
+          </CardBody>
+        </Card>
       </div>
       
       {/* Entrepreneurs grid */}
@@ -155,15 +235,22 @@ export const InvestorDashboard: React.FC = () => {
           </CardHeader>
           
           <CardBody>
-            {filteredEntrepreneurs.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredEntrepreneurs.map(entrepreneur => (
-                  <EntrepreneurCard
-                    key={entrepreneur.id}
-                    entrepreneur={entrepreneur}
-                  />
-                ))}
-              </div>
+            {featuredEntrepreneurs.length > 0 ? (
+              <>
+                {filteredEntrepreneurs.length > featuredEntrepreneurs.length ? (
+                  <div className="mb-4 text-sm text-gray-500">
+                    Showing the top {featuredEntrepreneurs.length} featured startups. Use search or "View All Startups" to explore more.
+                  </div>
+                ) : null}
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {featuredEntrepreneurs.map(entrepreneur => (
+                    <EntrepreneurCard
+                      key={entrepreneur.id}
+                      entrepreneur={entrepreneur}
+                    />
+                  ))}
+                </div>
+              </>
             ) : (
               <div className="text-center py-8">
                 <p className="text-gray-600">No startups match your filters</p>

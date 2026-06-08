@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { 
-  Home, Building2, CircleDollarSign, Users, MessageCircle, 
-  Bell, FileText, Settings, HelpCircle
+import { X } from 'lucide-react';
+import {
+  Home, Building2, CircleDollarSign, Users, MessageCircle,
+  Bell, FileText, Settings, HelpCircle, Play, Phone, Video
 } from 'lucide-react';
-
 interface SidebarItemProps {
   to: string;
   icon: React.ReactNode;
@@ -32,7 +32,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ to, icon, text }) => {
 
 export const Sidebar: React.FC = () => {
   const { user } = useAuth();
-  
+  const [showCallPanel, setShowCallPanel] = useState(false);
   if (!user) return null;
   
   // Define sidebar items based on user role
@@ -58,6 +58,7 @@ export const Sidebar: React.FC = () => {
   
   // Common items at the bottom
   const commonItems = [
+    { to: '/tour', icon: <Play size={20} />, text: 'Guided Tour' },
     { to: '/settings', icon: <Settings size={20} />, text: 'Settings' },
     { to: '/help', icon: <HelpCircle size={20} />, text: 'Help & Support' },
   ];
@@ -104,8 +105,32 @@ export const Sidebar: React.FC = () => {
             >
               support@businessnexus.com
             </a>
+            <div className="mt-3">
+              <button
+                onClick={() => setShowCallPanel(true)}
+                className="w-full inline-flex items-center justify-center gap-2 py-2 px-3 bg-primary-600 text-white rounded-md hover:bg-primary-700 mt-3"
+                aria-label="Start audio or video call"
+              >
+                <Phone size={16} />
+                <span className="text-sm font-medium">Start Call</span>
+              </button>
+            </div>
           </div>
         </div>
+        {showCallPanel && (
+          <div className="fixed left-72 bottom-6 z-50 w-[720px] max-w-[95%]">
+            <div className="relative">
+              <button
+                onClick={() => setShowCallPanel(false)}
+                className="absolute -top-3 -right-3 bg-white rounded-full p-1 shadow flex items-center justify-center"
+                aria-label="Close call panel"
+              >
+                <X size={16} />
+              </button>
+              <VideoCallPanel />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

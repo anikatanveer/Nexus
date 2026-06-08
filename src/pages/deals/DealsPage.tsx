@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
-import { Search, Filter, DollarSign, TrendingUp, Users, Calendar } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { Search, Filter, DollarSign, TrendingUp, Users, Calendar, UploadCloud } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 import { Card, CardHeader, CardBody } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Avatar } from '../../components/ui/Avatar';
+import { DocumentChamber } from '../../components/DocumentChamber';
 
 const deals = [
   {
@@ -49,6 +51,8 @@ const deals = [
 ];
 
 export const DealsPage: React.FC = () => {
+  const { user } = useAuth();
+  const documentChamberRef = useRef<HTMLDivElement | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
   
@@ -150,6 +154,28 @@ export const DealsPage: React.FC = () => {
           </CardBody>
         </Card>
       </div>
+
+      {user?.role === 'entrepreneur' ? (
+        <Card className="border-dashed border-2 border-primary-200 bg-primary-50">
+          <CardBody>
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-primary-900">Deal documents</h2>
+                <p className="text-sm text-primary-700">Upload contracts, proposals, or investor documents directly from the deals page.</p>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <Button variant="outline" onClick={() => documentChamberRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+                  <UploadCloud size={18} />
+                  <span className="ml-2">Upload deal files</span>
+                </Button>
+                <Button onClick={() => documentChamberRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+                  Open document chamber
+                </Button>
+              </div>
+            </div>
+          </CardBody>
+        </Card>
+      ) : null}
       
       {/* Filters */}
       <div className="flex flex-col md:flex-row gap-4">
@@ -267,6 +293,10 @@ export const DealsPage: React.FC = () => {
           </div>
         </CardBody>
       </Card>
+
+      <div ref={documentChamberRef}>
+        <DocumentChamber />
+      </div>
     </div>
   );
 };

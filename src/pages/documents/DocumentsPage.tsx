@@ -1,10 +1,20 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { FileText, Upload, Download, Trash2, Share2 } from 'lucide-react';
 import { Card, CardHeader, CardBody } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 
-const documents = [
+type DocumentItem = {
+  id: number;
+  name: string;
+  type: string;
+  size: string;
+  lastModified: string;
+  shared: boolean;
+  url?: string;
+};
+
+const initialDocuments: DocumentItem[] = [
   {
     id: 1,
     name: 'Pitch Deck 2024.pdf',
@@ -40,15 +50,52 @@ const documents = [
 ];
 
 export const DocumentsPage: React.FC = () => {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [documents, setDocuments] = useState<DocumentItem[]>(initialDocuments);
+
+  const handleFiles = (files: FileList | null) => {
+    if (!files) return;
+
+    const uploaded = Array.from(files).map((file, index) => ({
+      id: Date.now() + index,
+      name: file.name,
+      type: file.type ? file.type.split('/')[1].toUpperCase() : 'File',
+      size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
+      lastModified: new Date(file.lastModified).toLocaleDateString(),
+      shared: false,
+      url: URL.createObjectURL(file)
+    }));
+
+    setDocuments(prev => [...uploaded, ...prev]);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleDelete = (id: number) => {
+    setDocuments(prev => prev.filter(doc => doc.id !== id));
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        className="hidden"
+        onChange={e => handleFiles(e.target.files)}
+      />
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Documents</h1>
           <p className="text-gray-600">Manage your startup's important files</p>
         </div>
         
-        <Button leftIcon={<Upload size={18} />}>
+        <Button leftIcon={<Upload size={18} />} onClick={handleUploadClick}>
           Upload Document
         </Button>
       </div>
@@ -160,6 +207,7 @@ export const DocumentsPage: React.FC = () => {
                         size="sm"
                         className="p-2 text-error-600 hover:text-error-700"
                         aria-label="Delete"
+                        onClick={() => handleDelete(doc.id)}
                       >
                         <Trash2 size={18} />
                       </Button>

@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { User, Mail, Lock, CircleDollarSign, Building2, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { PasswordStrengthMeter } from '../../components/PasswordStrengthMeter';
 import { UserRole } from '../../types';
 
 export const RegisterPage: React.FC = () => {
@@ -18,9 +19,28 @@ export const RegisterPage: React.FC = () => {
   const { register } = useAuth();
   const navigate = useNavigate();
   
+  // Check password strength
+  const passwordStrength = useMemo(() => {
+    const requirements = {
+      minLength: password.length >= 8,
+      hasUppercase: /[A-Z]/.test(password),
+      hasLowercase: /[a-z]/.test(password),
+      hasNumbers: /\d/.test(password),
+      hasSpecial: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)
+    };
+    const metRequirements = Object.values(requirements).filter(Boolean).length;
+    return metRequirements >= 4; // Strong password = at least 4 requirements met
+  }, [password]);
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    
+    // Validate password strength
+    if (!passwordStrength) {
+      setError('Password is not strong enough. Please meet all requirements.');
+      return;
+    }
     
     // Validate passwords match
     if (password !== confirmPassword) {
@@ -132,6 +152,8 @@ export const RegisterPage: React.FC = () => {
               startAdornment={<Lock size={18} />}
             />
             
+            {password && <PasswordStrengthMeter password={password} />}
+            
             <Input
               label="Confirm password"
               type="password"
@@ -166,6 +188,7 @@ export const RegisterPage: React.FC = () => {
               type="submit"
               fullWidth
               isLoading={isLoading}
+              disabled={!passwordStrength || !password || !confirmPassword || password !== confirmPassword}
             >
               Create account
             </Button>

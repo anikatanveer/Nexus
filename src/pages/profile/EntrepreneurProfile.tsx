@@ -42,9 +42,11 @@ export const EntrepreneurProfile: React.FC = () => {
       createCollaborationRequest(
         currentUser.id,
         id,
-        `I'm interested in learning more about ${entrepreneur.startupName} and would like to explore potential investment opportunities.`
+        `I'm interested in learning more about ${entrepreneur.startupName} and would like to explore potential investment opportunities.`,
+        undefined,
+        undefined
       );
-      
+
       // In a real app, we would refresh the data or update state
       // For this demo, we'll force a page reload
       window.location.reload();
